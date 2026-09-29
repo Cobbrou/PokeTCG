@@ -66,15 +66,6 @@ export const Card3D: React.FC<Card3DProps> = ({
 
   const handleMouseEnter = () => {
     setIsHovered(true);
-    if (isFlipped) {
-      if (
-        card.rarity === 'Illustration Rare' ||
-        card.rarity === 'Special Illustration Rare' ||
-        card.rarity === 'Hyper Rare'
-      ) {
-        soundManager.playSparkle();
-      }
-    }
   };
 
   const handleMouseLeave = () => {

@@ -28,95 +28,134 @@ class SoundEngine {
       try {
         navigator.vibrate(pattern);
       } catch {
-        // Silently fail if not supported or disabled
+        // Silently fail if not supported
       }
     }
   }
 
-  // Son de déchirure de sachet plastique en continu pendant le geste (drag)
+  // Son de déchirure fluide et feutrée pendant le glisser
   public playTearDrag(progress: number) {
     if (this.isMuted) return;
     this.initCtx();
     if (!this.ctx) return;
 
-    // Micro-craquement proportionnel à l'avancement
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    const filter = this.ctx.createBiquadFilter();
-
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(800 + progress * 1600, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.05);
-
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(1600 + progress * 800, this.ctx.currentTime);
-
-    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.ctx.destination);
-
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.05);
-
-    this.vibrate(10);
-  }
-
-  // Bruit de déchirure complète finale du booster
-  public playTearPack() {
-    if (this.isMuted) return;
-    this.initCtx();
-    if (!this.ctx) return;
-
-    this.vibrate([30, 40, 60]);
-
-    const bufferSize = this.ctx.sampleRate * 0.45;
+    // Bruit de froissement de sachet feutré (bruit filtré rose/doux)
+    const duration = 0.04;
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
 
     for (let i = 0; i < bufferSize; i++) {
-      const crackle = Math.random() > 0.82 ? (Math.random() * 2 - 1) * 1.6 : (Math.random() * 2 - 1) * 0.35;
-      data[i] = crackle * (1 - i / bufferSize);
+      data[i] = (Math.random() * 2 - 1) * 0.25;
     }
 
     const noise = this.ctx.createBufferSource();
     noise.buffer = buffer;
 
     const filter = this.ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(1200, this.ctx.currentTime);
-    filter.frequency.exponentialRampToValueAtTime(3400, this.ctx.currentTime + 0.3);
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(800 + progress * 600, this.ctx.currentTime);
 
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.7, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.45);
+    gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
 
     noise.connect(filter);
     filter.connect(gain);
     gain.connect(this.ctx.destination);
 
     noise.start();
+    this.vibrate(8);
   }
 
-  // Bruit de glissement de carte (whoosh doux de papier glacé)
+  // Déflagration épique lors de l'ouverture du booster (Sub-bass + Impact + Shimmer)
+  public playEpicPackBurst() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    this.vibrate([40, 60, 100]);
+
+    // 1. Sub-bass boom cinématographique (ondes graves enveloppantes)
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(160, this.ctx.currentTime);
+    subOsc.frequency.exponentialRampToValueAtTime(38, this.ctx.currentTime + 0.7);
+
+    subGain.gain.setValueAtTime(0.6, this.ctx.currentTime);
+    subGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.75);
+
+    subOsc.connect(subGain);
+    subGain.connect(this.ctx.destination);
+    subOsc.start();
+    subOsc.stop(this.ctx.currentTime + 0.75);
+
+    // 2. Whoosh d'air métallique et déchirure
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.4);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.4 * (1 - i / bufferSize);
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1400, this.ctx.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(3200, this.ctx.currentTime + 0.35);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    noise.start();
+
+    // 3. Carillon magique descendant
+    [1046.5, 1318.51, 1567.98, 2093.0].forEach((freq, idx) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const sTime = this.ctx.currentTime + 0.15 + idx * 0.05;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, sTime);
+
+      gain.gain.setValueAtTime(0.15, sTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, sTime + 0.5);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(sTime);
+      osc.stop(sTime + 0.55);
+    });
+  }
+
+  // Bruit de déchirure standard
+  public playTearPack() {
+    this.playEpicPackBurst();
+  }
+
+  // Bruit de glissement de carte feutré (whoosh doux)
   public playCardSlide() {
     if (this.isMuted) return;
     this.initCtx();
     if (!this.ctx) return;
 
-    this.vibrate(12);
+    this.vibrate(10);
 
-    const duration = 0.16;
+    const duration = 0.15;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(450, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(160, this.ctx.currentTime + duration);
+    osc.frequency.setValueAtTime(380, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(140, this.ctx.currentTime + duration);
 
-    gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
 
     osc.connect(gain);
@@ -126,22 +165,22 @@ class SoundEngine {
     osc.stop(this.ctx.currentTime + duration);
   }
 
-  // Bruit de claquement sec lors du retournement de carte (snap)
+  // Bruit de claquement net de carte lors de la révélation
   public playCardFlip() {
     if (this.isMuted) return;
     this.initCtx();
     if (!this.ctx) return;
 
-    this.vibrate(20);
+    this.vibrate(18);
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(320, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(70, this.ctx.currentTime + 0.07);
+    osc.frequency.setValueAtTime(280, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.07);
 
-    gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.07);
 
     osc.connect(gain);
@@ -151,7 +190,7 @@ class SoundEngine {
     osc.stop(this.ctx.currentTime + 0.07);
   }
 
-  // Carillon holographique scintillant pour cartes rares
+  // Carillon harmonieux pour carte Rare (déclenché UNIQUEMENT au flip, pas au survol)
   public playSparkle() {
     if (this.isMuted) return;
     this.initCtx();
@@ -159,7 +198,8 @@ class SoundEngine {
 
     this.vibrate([20, 30, 20]);
 
-    const notes = [587.33, 739.99, 880.0, 1174.66, 1479.98]; // D5, F#5, A5, D6, F#6
+    // Accord arpégé majeur doux (Ré majeur brillant)
+    const notes = [587.33, 739.99, 880.0, 1174.66];
     notes.forEach((freq, index) => {
       if (!this.ctx) return;
       const osc = this.ctx.createOscillator();
@@ -169,43 +209,44 @@ class SoundEngine {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, startTime);
 
-      gain.gain.setValueAtTime(0.2, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.4);
+      gain.gain.setValueAtTime(0.12, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
 
       osc.start(startTime);
-      osc.stop(startTime + 0.45);
+      osc.stop(startTime + 0.4);
     });
   }
 
-  // Fanfare triomphale pour Ultra Rare / SIR / Gold avec grondement
+  // Fanfare majestueuse et grondement pour Ultra Rare / SIR / Gold
   public playUltraRareFanfare() {
     if (this.isMuted) return;
     this.initCtx();
     if (!this.ctx) return;
 
-    this.vibrate([40, 50, 40, 80, 120]);
+    this.vibrate([40, 50, 40, 80, 140]);
 
-    // Sub-bass impact
+    // Onde de choc sub-bass
     const subOsc = this.ctx.createOscillator();
     const subGain = this.ctx.createGain();
     subOsc.type = 'sine';
-    subOsc.frequency.setValueAtTime(140, this.ctx.currentTime);
-    subOsc.frequency.exponentialRampToValueAtTime(45, this.ctx.currentTime + 0.5);
-    subGain.gain.setValueAtTime(0.4, this.ctx.currentTime);
-    subGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.6);
+    subOsc.frequency.setValueAtTime(130, this.ctx.currentTime);
+    subOsc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.6);
+    subGain.gain.setValueAtTime(0.45, this.ctx.currentTime);
+    subGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.65);
     subOsc.connect(subGain);
     subGain.connect(this.ctx.destination);
     subOsc.start();
-    subOsc.stop(this.ctx.currentTime + 0.6);
+    subOsc.stop(this.ctx.currentTime + 0.65);
 
+    // Accord triomphal éclatant
     const chords = [
-      { notes: [440, 554.37, 659.25], start: 0, duration: 0.2 },
-      { notes: [493.88, 622.25, 739.99], start: 0.18, duration: 0.2 },
-      { notes: [554.37, 698.46, 830.61], start: 0.36, duration: 0.2 },
-      { notes: [659.25, 830.61, 987.77, 1318.51], start: 0.54, duration: 0.9 },
+      { notes: [440, 554.37, 659.25], start: 0, duration: 0.18 },
+      { notes: [493.88, 622.25, 739.99], start: 0.16, duration: 0.18 },
+      { notes: [554.37, 698.46, 830.61], start: 0.32, duration: 0.22 },
+      { notes: [659.25, 830.61, 987.77, 1318.51], start: 0.5, duration: 0.9 },
     ];
 
     chords.forEach(({ notes, start, duration }) => {
@@ -218,7 +259,7 @@ class SoundEngine {
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, sTime);
 
-        gain.gain.setValueAtTime(0.14, sTime);
+        gain.gain.setValueAtTime(0.12, sTime);
         gain.gain.exponentialRampToValueAtTime(0.001, sTime + duration);
 
         osc.connect(gain);

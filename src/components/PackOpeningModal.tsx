@@ -215,11 +215,24 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
           {/* Carte 3D interactive */}
           <div className="my-2 flex flex-col items-center relative">
+            {/* Bannière de découverte exceptionnelle */}
+            {isCurrentFlipped &&
+              (currentCard.rarity === 'Special Illustration Rare' ||
+                currentCard.rarity === 'Hyper Rare' ||
+                currentCard.rarity === 'Illustration Rare') && (
+                <div className="mb-3 px-4 py-1 rounded-full bg-gradient-to-r from-amber-400 via-pink-500 to-purple-600 text-white font-black text-xs uppercase tracking-wider shadow-xl shadow-pink-500/50 animate-bounce flex items-center gap-1.5 z-20">
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                  CARTE D'EXCEPTION DÉCOUVERTE !
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                </div>
+              )}
+
             {/* Aura lumineuse si Ultra Rare dévoilée */}
             {isCurrentFlipped &&
               (currentCard.rarity === 'Special Illustration Rare' ||
-                currentCard.rarity === 'Hyper Rare') && (
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500/30 via-pink-500/30 to-purple-500/30 blur-3xl animate-pulse pointer-events-none" />
+                currentCard.rarity === 'Hyper Rare' ||
+                currentCard.rarity === 'Illustration Rare') && (
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500/40 via-pink-500/40 to-purple-500/40 blur-3xl animate-pulse pointer-events-none scale-125" />
               )}
 
             <Card3D

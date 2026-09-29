@@ -20,6 +20,10 @@
   perspective: 1000px;
 }
 
+.perspective-1500 {
+  perspective: 1500px;
+}
+
 .preserve-3d {
   transform-style: preserve-3d;
 }
@@ -29,17 +33,76 @@
   -webkit-backface-visibility: hidden;
 }
 
+/* Floating Levitation */
+@keyframes floatBooster {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(0.8deg);
+  }
+}
+
+.animate-float {
+  animation: floatBooster 4.5s ease-in-out infinite;
+}
+
+/* Cosmic Sunburst Vortex */
+@keyframes vortexSpin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.animate-vortex {
+  animation: vortexSpin 24s linear infinite;
+}
+
+/* Blinding Light Shockwave */
+@keyframes shockwaveExpand {
+  0% {
+    transform: scale(0.2);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+.animate-shockwave {
+  animation: shockwaveExpand 0.75s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
+
+/* Laser Cut Seam Glow */
+.laser-seam {
+  box-shadow: 
+    0 0 10px #38bdf8,
+    0 0 25px #0284c7,
+    0 0 40px #38bdf8;
+}
+
 /* Screen shake for Ultra Rare discoveries */
 @keyframes screenshake {
   0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  20% { transform: translate(-3px, 2px) rotate(-1deg); }
-  40% { transform: translate(3px, -2px) rotate(1deg); }
-  60% { transform: translate(-2px, 3px) rotate(0deg); }
-  80% { transform: translate(2px, -1px) rotate(1deg); }
+  15% { transform: translate(-5px, 4px) rotate(-1.5deg); }
+  30% { transform: translate(5px, -4px) rotate(1.5deg); }
+  45% { transform: translate(-4px, 3px) rotate(-1deg); }
+  60% { transform: translate(4px, -2px) rotate(1deg); }
+  75% { transform: translate(-2px, 1px) rotate(0deg); }
 }
 
 .animate-screenshake {
-  animation: screenshake 0.45s cubic-bezier(.36,.07,.19,.97) both;
+  animation: screenshake 0.55s cubic-bezier(.36,.07,.19,.97) both;
 }
 
 /* Cosmic Prismatic Shimmer */
@@ -55,7 +118,7 @@
   background-size: 300% 300%;
 }
 
-/* Reverse Holo Pattern (Mirror stripes with matte illustration cutout) */
+/* Reverse Holo Pattern */
 .reverse-holo-bars {
   background-image: repeating-linear-gradient(
     -45deg,
