@@ -4,6 +4,14 @@ import { CardInCollection, PackOpeningHistory, PokemonCard } from '../types/poke
 import { soundManager } from '../utils/audio';
 import { saveToIndexedDB } from '../services/storage';
 
+export const DEFAULT_INITIAL_PACKS: Record<string, number> = {
+  'sv3pt5': 10,
+  'sv3': 10,
+  'swsh7': 10,
+  'base1': 10,
+  'sv4': 10,
+};
+
 interface CollectionState {
   collection: Record<string, CardInCollection>;
   openingHistory: PackOpeningHistory[];
@@ -18,6 +26,7 @@ interface CollectionState {
   addCardsToCollection: (cards: PokemonCard[], setId: string, setName: string, isGodPack?: boolean) => void;
   toggleFavorite: (cardId: string) => void;
   claimDailyReward: () => void;
+  refillAllPacks: (count?: number) => void;
   consumeBoosterPack: (setId: string) => boolean;
   addBoosterPacks: (setId: string, count: number) => void;
   toggleSound: () => void;
@@ -33,11 +42,8 @@ export const useCollectionStore = create<CollectionState>()(
       collection: {},
       openingHistory: [],
       totalPacksOpened: 0,
-      pokeCoins: 500,
-      availablePacks: {
-        'sv3pt5': 5, // 5 boosters 151 au démarrage
-        'sv03': 3,
-      },
+      pokeCoins: 1000,
+      availablePacks: { ...DEFAULT_INITIAL_PACKS },
       soundEnabled: true,
       cardTrickEnabled: true, // Rituel de suspense activé par défaut
       fastOpenEnabled: false,
@@ -136,33 +142,52 @@ export const useCollectionStore = create<CollectionState>()(
       },
 
       claimDailyReward: () => {
-        set((state) => ({
-          pokeCoins: state.pokeCoins + 200,
-          availablePacks: {
-            ...state.availablePacks,
-            'sv3pt5': (state.availablePacks['sv3pt5'] || 0) + 2,
-          },
-        }));
+        set((state) => {
+          const updated = { ...state.availablePacks };
+          Object.keys(DEFAULT_INITIAL_PACKS).forEach((id) => {
+            updated[id] = (updated[id] || 0) + 2;
+          });
+          return {
+            pokeCoins: state.pokeCoins + 300,
+            availablePacks: updated,
+          };
+        });
+      },
+
+      refillAllPacks: (count: number = 5) => {
+        set((state) => {
+          const updated = { ...state.availablePacks };
+          Object.keys(DEFAULT_INITIAL_PACKS).forEach((id) => {
+            updated[id] = (updated[id] || 0) + count;
+          });
+          return {
+            pokeCoins: state.pokeCoins + 500,
+            availablePacks: updated,
+          };
+        });
       },
 
       consumeBoosterPack: (setId: string) => {
-        const count = get().availablePacks[setId] || 0;
+        // Fallback for sv03 -> sv3
+        const targetId = setId === 'sv03' ? 'sv3' : setId;
+        const count = get().availablePacks[targetId] || 0;
         if (count <= 0) return false;
 
         set((state) => ({
           availablePacks: {
             ...state.availablePacks,
-            [setId]: count - 1,
+            [targetId]: count - 1,
           },
         }));
         return true;
       },
 
       addBoosterPacks: (setId: string, count: number) => {
+        const targetId = setId === 'sv03' ? 'sv3' : setId;
         set((state) => ({
           availablePacks: {
             ...state.availablePacks,
-            [setId]: (state.availablePacks[setId] || 0) + count,
+            [targetId]: (state.availablePacks[targetId] || 0) + count,
           },
         }));
       },
@@ -183,16 +208,37 @@ export const useCollectionStore = create<CollectionState>()(
           collection: {},
           openingHistory: [],
           totalPacksOpened: 0,
-          pokeCoins: 500,
-          availablePacks: {
-            'sv3pt5': 5,
-            'sv03': 3,
-          },
+          pokeCoins: 1000,
+          availablePacks: { ...DEFAULT_INITIAL_PACKS },
         });
       },
     }),
     {
       name: 'poketcg-collection-storage',
+      merge: (persistedState: any, currentState) => {
+        const mergedPacks: Record<string, number> = {
+          ...DEFAULT_INITIAL_PACKS,
+          ...(persistedState?.availablePacks || {}),
+        };
+        // Migration sv03 -> sv3
+        if (mergedPacks['sv03'] !== undefined) {
+          if (!mergedPacks['sv3']) {
+            mergedPacks['sv3'] = mergedPacks['sv03'];
+          }
+          delete mergedPacks['sv03'];
+        }
+        // Ensure all new sets have packs available
+        for (const [key, defaultCount] of Object.entries(DEFAULT_INITIAL_PACKS)) {
+          if (mergedPacks[key] === undefined || mergedPacks[key] <= 0) {
+            mergedPacks[key] = defaultCount;
+          }
+        }
+        return {
+          ...currentState,
+          ...persistedState,
+          availablePacks: mergedPacks,
+        };
+      },
     }
   )
 );

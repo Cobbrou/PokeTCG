@@ -92,10 +92,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             type="button"
             onClick={claimDailyReward}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
-            title="Obtenir 2 boosters gratuits et 200 pièces !"
+            title="Obtenir 2 boosters de chaque extension (+10 boosters) et 300 pièces !"
           >
             <Gift className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">+2 Boosters</span>
+            <span className="hidden md:inline">Cadeau (+10 Boosters)</span>
           </button>
 
           {/* Bouton Audio */}

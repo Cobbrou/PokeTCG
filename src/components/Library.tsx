@@ -26,6 +26,7 @@ export const Library: React.FC = () => {
 
   // Cartes de l'extension sélectionnée
   const setCards = useMemo(() => {
+    if (selectedSet === 'ALL') return CARDS_DATABASE;
     return CARDS_DATABASE.filter((card) => card.setId === selectedSet);
   }, [selectedSet]);
 
@@ -147,21 +148,45 @@ export const Library: React.FC = () => {
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 mb-8 shadow-xl">
         {/* Choix de l'extension */}
         <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            {EXPANSION_SETS.map((set) => (
-              <button
-                key={set.id}
-                type="button"
-                onClick={() => setSelectedSet(set.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  selectedSet === set.id
-                    ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25'
-                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-                }`}
-              >
-                {set.name}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedSet('ALL')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                selectedSet === 'ALL'
+                  ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25'
+                  : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Toutes ({CARDS_DATABASE.length})</span>
+            </button>
+            {EXPANSION_SETS.map((set) => {
+              const count = CARDS_DATABASE.filter((c) => c.setId === set.id).length;
+              return (
+                <button
+                  key={set.id}
+                  type="button"
+                  onClick={() => setSelectedSet(set.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                    selectedSet === set.id
+                      ? 'text-white shadow-lg'
+                      : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                  }`}
+                  style={{
+                    backgroundColor: selectedSet === set.id ? set.accentColor : undefined,
+                    boxShadow: selectedSet === set.id ? `0 4px 14px ${set.accentColor}40` : undefined,
+                  }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: set.accentColor }}
+                  />
+                  <span>{set.name}</span>
+                  <span className="opacity-75 text-[10px]">({count})</span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Recherche */}

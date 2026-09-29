@@ -256,7 +256,12 @@ export const InteractivePackTear: React.FC<InteractivePackTearProps> = ({
         </div>
 
         {/* ================= CORPS INFÉRIEUR DU BOOSTER MÉTALLISÉ ================= */}
-        <div className="w-full h-full rounded-3xl overflow-hidden relative border border-slate-700/70 shadow-2xl bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 flex flex-col justify-between p-5 z-20">
+        <div
+          className="w-full h-full rounded-3xl overflow-hidden relative border border-slate-700/70 shadow-2xl flex flex-col justify-between p-5 z-20"
+          style={{
+            background: `linear-gradient(165deg, ${setInfo.accentColor}30 0%, #0f172a 45%, #020617 100%)`,
+          }}
+        >
           {/* Reflet de brillance foil diagonal */}
           <div
             className="absolute inset-0 pointer-events-none"
@@ -268,18 +273,37 @@ export const InteractivePackTear: React.FC<InteractivePackTearProps> = ({
 
           {/* Header du booster */}
           <div className="text-center pt-8">
-            <span className="text-[11px] font-black uppercase tracking-widest text-sky-400 drop-shadow">
+            <span
+              className="text-[11px] font-black uppercase tracking-widest drop-shadow"
+              style={{ color: setInfo.accentColor }}
+            >
               {setInfo.series}
             </span>
           </div>
 
           {/* Cœur visuel du booster */}
-          <div className="flex flex-col items-center text-center my-auto">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-sky-500 via-indigo-500 to-purple-600 p-1 mb-3 shadow-xl shadow-sky-500/40 flex items-center justify-center">
-              <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center">
-                <Sparkles className="w-10 h-10 text-amber-400 animate-pulse" />
+          <div className="flex flex-col items-center text-center my-auto px-2">
+            {setInfo.logo ? (
+              <div className="h-20 w-48 mb-3 flex items-center justify-center drop-shadow-[0_8px_16px_rgba(0,0,0,0.85)]">
+                <img
+                  src={setInfo.logo}
+                  alt={setInfo.name}
+                  className="max-h-full max-w-full object-contain filter drop-shadow"
+                />
               </div>
-            </div>
+            ) : (
+              <div
+                className="w-24 h-24 rounded-full p-1 mb-3 shadow-xl flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(135deg, ${setInfo.accentColor}, #0f172a)`,
+                  boxShadow: `0 0 25px ${setInfo.accentColor}60`,
+                }}
+              >
+                <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center">
+                  <Sparkles className="w-10 h-10 text-amber-400 animate-pulse" />
+                </div>
+              </div>
+            )}
             <h3 className="text-xl font-black text-white tracking-wide uppercase drop-shadow-md">
               {setInfo.name}
             </h3>
