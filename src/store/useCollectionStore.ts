@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CardInCollection, PackOpeningHistory, PokemonCard } from '../types/pokemon';
+import { CardInCollection, PackOpeningHistory, PokemonCard, CRAFTING_RATES } from '../types/pokemon';
+import { CARDS_DATABASE } from '../data/pokemonData';
 import { soundManager } from '../utils/audio';
 import { saveToIndexedDB } from '../services/storage';
 
@@ -17,6 +18,7 @@ interface CollectionState {
   openingHistory: PackOpeningHistory[];
   totalPacksOpened: number;
   pokeCoins: number;
+  stardust: number;
   availablePacks: Record<string, number>;
   soundEnabled: boolean;
   cardTrickEnabled: boolean;
@@ -32,6 +34,9 @@ interface CollectionState {
   toggleSound: () => void;
   toggleCardTrick: () => void;
   toggleFastOpen: () => void;
+  recycleCards: (items: { cardId: string; count: number }[]) => number;
+  recycleAllDuplicates: () => number;
+  craftCard: (cardId: string) => boolean;
   resetCollection: () => void;
   loadStateFromBackup: (newState: Record<string, unknown>) => void;
 }
@@ -43,6 +48,8 @@ export const useCollectionStore = create<CollectionState>()(
       openingHistory: [],
       totalPacksOpened: 0,
       pokeCoins: 1000,
+      stardust: 300,
+
       availablePacks: { ...DEFAULT_INITIAL_PACKS },
       soundEnabled: true,
       cardTrickEnabled: true, // Rituel de suspense activé par défaut
@@ -192,6 +199,96 @@ export const useCollectionStore = create<CollectionState>()(
         }));
       },
 
+      recycleCards: (items) => {
+        let earnedStardust = 0;
+        const currentCollection = { ...get().collection };
+
+        items.forEach(({ cardId, count }) => {
+          const colItem = currentCollection[cardId];
+          if (!colItem || colItem.count <= 1) return;
+          const cardData = CARDS_DATABASE.find((c) => c.id === cardId);
+          const yieldPerUnit = cardData ? (CRAFTING_RATES[cardData.rarity]?.recycleYield ?? 10) : 10;
+
+          // On conserve au moins 1 exemplaire pour la collection
+          const maxRecyclable = Math.max(0, colItem.count - 1);
+          const actualRecycled = Math.min(count, maxRecyclable);
+          if (actualRecycled <= 0) return;
+
+          currentCollection[cardId] = {
+            ...colItem,
+            count: colItem.count - actualRecycled,
+          };
+          earnedStardust += actualRecycled * yieldPerUnit;
+        });
+
+        if (earnedStardust > 0) {
+          soundManager.playRecycleSound();
+          const nextStardust = get().stardust + earnedStardust;
+          set({
+            collection: currentCollection,
+            stardust: nextStardust,
+          });
+          saveToIndexedDB('poketcg_collection', {
+            collection: currentCollection,
+            stardust: nextStardust,
+          });
+        }
+
+        return earnedStardust;
+      },
+
+      recycleAllDuplicates: () => {
+        const state = get();
+        const duplicates = Object.entries(state.collection)
+          .filter(([_, item]) => item && item.count > 1)
+          .map(([cardId, item]) => ({ cardId, count: item.count - 1 }));
+
+        if (duplicates.length === 0) return 0;
+        return state.recycleCards(duplicates);
+      },
+
+      craftCard: (cardId: string) => {
+        const card = CARDS_DATABASE.find((c) => c.id === cardId);
+        if (!card) return false;
+
+        const cost = CRAFTING_RATES[card.rarity]?.craftCost ?? 100;
+        const currentStardust = get().stardust;
+        if (currentStardust < cost) return false;
+
+        const currentCollection = { ...get().collection };
+        const now = Date.now();
+
+        if (currentCollection[cardId]) {
+          currentCollection[cardId] = {
+            ...currentCollection[cardId],
+            count: currentCollection[cardId].count + 1,
+          };
+        } else {
+          currentCollection[cardId] = {
+            cardId: card.id,
+            count: 1,
+            firstObtainedAt: now,
+            isFavorite: false,
+          };
+        }
+
+        const nextStardust = currentStardust - cost;
+        soundManager.playCraftSuccess();
+        soundManager.playSleeveInsert();
+
+        set({
+          collection: currentCollection,
+          stardust: nextStardust,
+        });
+
+        saveToIndexedDB('poketcg_collection', {
+          collection: currentCollection,
+          stardust: nextStardust,
+        });
+
+        return true;
+      },
+
       loadStateFromBackup: (newState) => {
         set((state) => ({
           ...state,
@@ -199,6 +296,7 @@ export const useCollectionStore = create<CollectionState>()(
           openingHistory: (newState.openingHistory as PackOpeningHistory[]) || state.openingHistory,
           totalPacksOpened: typeof newState.totalPacksOpened === 'number' ? newState.totalPacksOpened : state.totalPacksOpened,
           pokeCoins: typeof newState.pokeCoins === 'number' ? newState.pokeCoins : state.pokeCoins,
+          stardust: typeof newState.stardust === 'number' ? newState.stardust : state.stardust,
           availablePacks: (newState.availablePacks as Record<string, number>) || state.availablePacks,
         }));
       },
@@ -209,6 +307,7 @@ export const useCollectionStore = create<CollectionState>()(
           openingHistory: [],
           totalPacksOpened: 0,
           pokeCoins: 1000,
+          stardust: 300,
           availablePacks: { ...DEFAULT_INITIAL_PACKS },
         });
       },
@@ -236,9 +335,11 @@ export const useCollectionStore = create<CollectionState>()(
         return {
           ...currentState,
           ...persistedState,
+          stardust: typeof persistedState?.stardust === 'number' ? persistedState.stardust : currentState.stardust,
           availablePacks: mergedPacks,
         };
       },
     }
   )
 );
+

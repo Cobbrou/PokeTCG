@@ -2,12 +2,14 @@ import { useState, useRef } from 'react';
 import { Navbar } from './components/Navbar';
 import { PackOpeningHub } from './components/PackOpeningHub';
 import { Library } from './components/Library';
+import { RecycleModal } from './components/RecycleModal';
 import { useCollectionStore } from './store/useCollectionStore';
 import { exportBackupJSON, importBackupJSON } from './services/storage';
 import { RotateCcw, Download, Upload } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'OPENING' | 'LIBRARY'>('OPENING');
+  const [isRecycleModalOpen, setIsRecycleModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetCollection = useCollectionStore((state) => state.resetCollection);
@@ -26,6 +28,7 @@ export function App() {
       openingHistory: state.openingHistory,
       totalPacksOpened: state.totalPacksOpened,
       pokeCoins: state.pokeCoins,
+      stardust: state.stardust,
       availablePacks: state.availablePacks,
     });
   };
@@ -52,12 +55,23 @@ export function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* Navigation supérieure */}
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenRecycleModal={() => setIsRecycleModalOpen(true)}
+      />
 
       {/* Contenu principal */}
       <main className="flex-1 pb-16">
         {activeTab === 'OPENING' ? <PackOpeningHub /> : <Library />}
       </main>
+
+      {/* Modal globale d'Atelier de Recyclage */}
+      <RecycleModal
+        isOpen={isRecycleModalOpen}
+        onClose={() => setIsRecycleModalOpen(false)}
+      />
+
 
       {/* Input de fichier caché pour l'import JSON */}
       <input

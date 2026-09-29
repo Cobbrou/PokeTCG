@@ -270,6 +270,128 @@ class SoundEngine {
       });
     });
   }
+
+  // Bruit de page de classeur en plastique tournée (flip doux)
+  public playPageFlip() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    this.vibrate(8);
+
+    const duration = 0.22;
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      // Bruit texturé doux imitant le froissement d'une pochette plastique épaisse
+      const env = Math.sin((i / bufferSize) * Math.PI);
+      data[i] = (Math.random() * 2 - 1) * 0.18 * env;
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(650, this.ctx.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(1400, this.ctx.currentTime + duration * 0.5);
+    filter.frequency.exponentialRampToValueAtTime(500, this.ctx.currentTime + duration);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    noise.start();
+  }
+
+  // Son feutré d'insertion de carte dans une pochette sleeve plastique
+  public playSleeveInsert() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    this.vibrate(12);
+
+    const duration = 0.14;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + duration);
+
+    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + duration);
+  }
+
+  // Son cristallin magique de forgeage / craft réussi d'une carte
+  public playCraftSuccess() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    this.vibrate([25, 40, 60]);
+
+    // Arpège ascendant étincelant (Do Maj 7 brillant)
+    const notes = [523.25, 659.25, 783.99, 987.77, 1046.5, 1318.51];
+    notes.forEach((freq, idx) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const sTime = this.ctx.currentTime + idx * 0.045;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, sTime);
+
+      gain.gain.setValueAtTime(0.15, sTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, sTime + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(sTime);
+      osc.stop(sTime + 0.4);
+    });
+  }
+
+  // Son de recyclage / dissolution en poussière d'étoile
+  public playRecycleSound() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    this.vibrate([15, 30, 20]);
+
+    // Onde descendante avec scintillement
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(220, this.ctx.currentTime + 0.35);
+
+    gain.gain.setValueAtTime(0.22, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.35);
+  }
 }
 
 export const soundManager = new SoundEngine();
+

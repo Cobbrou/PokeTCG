@@ -13,12 +13,14 @@ import {
 interface NavbarProps {
   activeTab: 'OPENING' | 'LIBRARY';
   setActiveTab: (tab: 'OPENING' | 'LIBRARY') => void;
+  onOpenRecycleModal?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
+export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenRecycleModal }) => {
   const soundEnabled = useCollectionStore((state) => state.soundEnabled);
   const toggleSound = useCollectionStore((state) => state.toggleSound);
   const pokeCoins = useCollectionStore((state) => state.pokeCoins);
+  const stardust = useCollectionStore((state) => state.stardust);
   const availablePacks = useCollectionStore((state) => state.availablePacks);
   const claimDailyReward = useCollectionStore((state) => state.claimDailyReward);
 
@@ -75,17 +77,29 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>Ma Bibliothèque</span>
+            <span>Ma Collection & Classeur</span>
           </button>
         </nav>
 
         {/* Monnaie & Actions Rapides */}
         <div className="flex items-center gap-3">
+          {/* Poussière d'Étoile (Stardust) */}
+          <button
+            type="button"
+            onClick={onOpenRecycleModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-cyan-900/40 text-xs font-bold text-cyan-400 transition-colors shadow-sm"
+            title="Poussière d'Étoile - Cliquez pour ouvrir l'Atelier de Recyclage"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+            <span>{stardust}</span>
+          </button>
+
           {/* Pièces */}
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-amber-400">
             <Coins className="w-3.5 h-3.5" />
             <span>{pokeCoins}</span>
           </div>
+
 
           {/* Cadeau Quotidien */}
           <button

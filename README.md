@@ -87,33 +87,35 @@ flowchart LR
 ```
 
 ### 🧱 Phase 1 : Fondations & Prototype MVP
-- [ ] Initialisation du projet Vite + React + TypeScript + Tailwind CSS.
-- [ ] Modélisation des types de données (Carte, Booster, Extension, Rareté, Collection).
-- [ ] Intégration de l'API Pokémon TCG ou mock local complet du set **Pokémon 151**.
-- [ ] Composant de carte de base avec affichage recto/verso et flip animation.
-- [ ] Algorithme de génération de booster avec tirage pondéré selon les raretés réelles.
-- [ ] Interface simple de tirage de 10 cartes.
+- [x] Initialisation du projet Vite + React + TypeScript + Tailwind CSS.
+- [x] Modélisation des types de données (Carte, Booster, Extension, Rareté, Collection).
+- [x] Intégration de l'API Pokémon TCG et mock local complet multi-extensions (171 cartes).
+- [x] Composant de carte de base avec affichage recto/verso et flip animation.
+- [x] Algorithme de génération de booster avec tirage pondéré selon les raretés réelles.
+- [x] Interface immersive de tirage de cartes avec rituel de suspense (Card Trick).
 
 ### ✨ Phase 2 : Immersion Visuelle, Physique & Audio
-- [ ] Conception de l'effet 3D interactif avec réfraction holographique (shaders / CSS 3D matrix).
-- [ ] Animation réaliste de déchirure et déballage du booster (geste swipe/drag).
-- [ ] Ajout des bruitages de manipulation (emballage, cartes, carillon de carte rare).
-- [ ] Effets spéciaux lors de la découverte de cartes d'exception (effets de particules, vibration).
-- [ ] Persistance locale de la collection du joueur avec IndexedDB.
+- [x] Conception de l'effet 3D interactif avec réfraction holographique (shaders foil, grain cosmos, reflets or).
+- [x] Animation réaliste de déchirure et déballage du booster (geste swipe/drag feutré).
+- [x] Ajout des bruitages de manipulation haute fidélité (froissement, déchirement, carillons, fanfares).
+- [x] Effets spéciaux lors de la découverte de cartes d'exception (effets de particules, vibration haptique).
+- [x] Persistance locale de la collection du joueur avec IndexedDB et export JSON.
 
 ### 📖 Phase 3 : Bibliothèque & Classeur Virtuel (*Binder*)
-- [ ] Interface de bibliothèque avec recherche textuelle instantanée et filtres multi-critères.
-- [ ] Mode d'affichage "Classeur" interactif (pages tournantes, disposition 3x3).
-- [ ] Indicateurs de complétion par set et suivi des cartes manquantes.
-- [ ] Gestion des doublons et statistiques globales du joueur.
-- [ ] Système d'export et d'import de sauvegarde au format JSON.
+- [x] Interface de bibliothèque avec recherche textuelle instantanée et filtres multi-critères.
+- [x] Mode d'affichage "Classeur" interactif (pages tournantes 3x3, pochettes transparentes avec reflets, son de page).
+- [x] Indicateurs de complétion par set et suivi des cartes manquantes.
+- [x] Gestion des doublons et statistiques globales du joueur.
+- [x] Système d'export et d'import de sauvegarde au format JSON.
+- [x] Atelier de Recyclage des doublons & Forge de cartes (*Crafting*) via Poussière d'Étoile (*Stardust*).
 
 ### 🃏 Phase 4 : Deck Builder & Économie Virtuelle
 - [ ] Créateur de decks (respect des règles officielles : 60 cartes, maximum 4 exemplaires, cartes Énergie).
 - [ ] Simulateur de tirage de main initiale et test de probabilités de pioche.
-- [ ] Système de quêtes quotidiennes et boosters gratuits à intervalles réguliers.
-- [ ] Système de conversion des doublons en devises virtuelles pour fabriquer (*craft*) des cartes précises.
+- [x] Système de quêtes quotidiennes, recharges et boosters gratuits.
+- [x] Système de conversion des doublons en devises virtuelles pour fabriquer (*craft*) des cartes précises.
 - [ ] Fonctionnalité de *Wonder Pick* inspirée de Pokémon TCG Pocket.
+
 
 ### ⚔️ Phase 5 : Duel & Fonctionnalités Sociales
 - [ ] Mode d'entraînement de combat simplifié contre une IA (calcul des dégâts, faiblesses, énergies).

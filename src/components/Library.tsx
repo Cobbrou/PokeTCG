@@ -4,6 +4,8 @@ import { CARDS_DATABASE, EXPANSION_SETS } from '../data/pokemonData';
 import { useCollectionStore } from '../store/useCollectionStore';
 import { Card3D } from './Card3D';
 import { CardInspectorModal } from './CardInspectorModal';
+import { VirtualBinder } from './VirtualBinder';
+import { RecycleModal } from './RecycleModal';
 import {
   Search,
   Sparkles,
@@ -11,18 +13,31 @@ import {
   Layers,
   CheckCircle2,
   CircleDashed,
+  BookOpen,
+  LayoutGrid,
+  Recycle,
 } from 'lucide-react';
 
 export const Library: React.FC = () => {
   const collection = useCollectionStore((state) => state.collection);
   const toggleFavorite = useCollectionStore((state) => state.toggleFavorite);
 
+  const [viewMode, setViewMode] = useState<'BINDER' | 'GRID'>('BINDER');
+  const [isRecycleOpen, setIsRecycleOpen] = useState(false);
   const [selectedSet, setSelectedSet] = useState<string>('sv3pt5');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRarity, setSelectedRarity] = useState<string>('ALL');
   const [selectedType, setSelectedType] = useState<string>('ALL');
   const [filterOwned, setFilterOwned] = useState<'ALL' | 'OWNED' | 'MISSING' | 'FAVORITES'>('ALL');
   const [inspectingCard, setInspectingCard] = useState<PokemonCard | null>(null);
+
+  // Nombre total de doublons
+  const totalDuplicates = useMemo(() => {
+    return Object.values(collection).reduce((sum, item) => {
+      return sum + (item && item.count > 1 ? item.count - 1 : 0);
+    }, 0);
+  }, [collection]);
+
 
   // Cartes de l'extension sélectionnée
   const setCards = useMemo(() => {
@@ -99,225 +114,290 @@ export const Library: React.FC = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-8">
-      {/* ================= BARRE DE STATISTIQUES ================= */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-sky-500/10 text-sky-400">
-            <Layers className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-xs text-slate-400 font-semibold block">Cartes uniques</span>
-            <div className="text-xl font-black text-white">
-              {stats.uniqueOwned} <span className="text-xs text-slate-500 font-normal">/ {stats.totalSetCards}</span>
+      {/* ================= COMMUTATEUR DE VUE & OUTILS ================= */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-slate-900/60 p-2 sm:p-3 rounded-2xl border border-slate-800 backdrop-blur-sm">
+        <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button
+            type="button"
+            onClick={() => setViewMode('BINDER')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              viewMode === 'BINDER'
+                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/25'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Mode Classeur Réaliste (3x3)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode('GRID')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              viewMode === 'GRID'
+                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/25'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            <span>Vue Grille Rapide</span>
+          </button>
+        </div>
+
+        {/* Bouton Atelier Recyclage */}
+        <button
+          type="button"
+          onClick={() => setIsRecycleOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-950/60 to-indigo-950/60 hover:from-cyan-900/70 hover:to-indigo-900/70 border border-cyan-800/60 text-cyan-300 text-xs font-bold transition-all shadow-sm"
+        >
+          <Recycle className="w-4 h-4 text-cyan-400" />
+          <span>Atelier de Recyclage</span>
+          {totalDuplicates > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-cyan-400 text-slate-950 text-[10px] font-black">
+              {totalDuplicates} doublons
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* ================= VUE CLASSEUR RÉALISTE (3x3) ================= */}
+      {viewMode === 'BINDER' ? (
+        <VirtualBinder
+          selectedSetId={selectedSet === 'ALL' ? 'sv3pt5' : selectedSet}
+          onSelectSetId={setSelectedSet}
+          onInspectCard={setInspectingCard}
+          onOpenRecycleModal={() => setIsRecycleOpen(true)}
+        />
+      ) : (
+        /* ================= VUE GRILLE RAPIDE ================= */
+        <>
+          {/* ================= BARRE DE STATISTIQUES ================= */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-sky-500/10 text-sky-400">
+                <Layers className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-xs text-slate-400 font-semibold block">Cartes uniques</span>
+                <div className="text-xl font-black text-white">
+                  {stats.uniqueOwned} <span className="text-xs text-slate-500 font-normal">/ {stats.totalSetCards}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-xs text-slate-400 font-semibold block">Complétion du Set</span>
+                <div className="text-xl font-black text-emerald-400">{stats.completionRate}%</div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-xs text-slate-400 font-semibold block">Ultra & Spéciales</span>
+                <div className="text-xl font-black text-amber-400">{stats.ultraRaresCount}</div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400">
+                <Trophy className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-xs text-slate-400 font-semibold block">Total Exemplaires</span>
+                <div className="text-xl font-black text-purple-300">{stats.totalCopies}</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-xs text-slate-400 font-semibold block">Complétion du Set</span>
-            <div className="text-xl font-black text-emerald-400">{stats.completionRate}%</div>
-          </div>
-        </div>
-
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
-            <Sparkles className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-xs text-slate-400 font-semibold block">Ultra & Spéciales</span>
-            <div className="text-xl font-black text-amber-400">{stats.ultraRaresCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400">
-            <Trophy className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-xs text-slate-400 font-semibold block">Total Exemplaires</span>
-            <div className="text-xl font-black text-purple-300">{stats.totalCopies}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ================= SÉLECTEUR D'EXTENSION & FILTRES ================= */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 mb-8 shadow-xl">
-        {/* Choix de l'extension */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-800">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedSet('ALL')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                selectedSet === 'ALL'
-                  ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25'
-                  : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Toutes ({CARDS_DATABASE.length})</span>
-            </button>
-            {EXPANSION_SETS.map((set) => {
-              const count = CARDS_DATABASE.filter((c) => c.setId === set.id).length;
-              return (
+          {/* ================= SÉLECTEUR D'EXTENSION & FILTRES ================= */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 mb-8 shadow-xl">
+            {/* Choix de l'extension */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-800">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
-                  key={set.id}
                   type="button"
-                  onClick={() => setSelectedSet(set.id)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                    selectedSet === set.id
-                      ? 'text-white shadow-lg'
+                  onClick={() => setSelectedSet('ALL')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    selectedSet === 'ALL'
+                      ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25'
                       : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
                   }`}
-                  style={{
-                    backgroundColor: selectedSet === set.id ? set.accentColor : undefined,
-                    boxShadow: selectedSet === set.id ? `0 4px 14px ${set.accentColor}40` : undefined,
-                  }}
                 >
-                  <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: set.accentColor }}
-                  />
-                  <span>{set.name}</span>
-                  <span className="opacity-75 text-[10px]">({count})</span>
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Toutes ({CARDS_DATABASE.length})</span>
                 </button>
-              );
-            })}
-          </div>
-
-          {/* Recherche */}
-          <div className="relative min-w-[260px]">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Rechercher par nom ou numéro..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* Filtres secondaires */}
-        <div className="flex flex-wrap items-center gap-3 pt-6 text-xs">
-          {/* État de possession */}
-          <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
-            {(
-              [
-                { id: 'ALL', label: 'Toutes' },
-                { id: 'OWNED', label: 'Possédées' },
-                { id: 'MISSING', label: 'Manquantes' },
-                { id: 'FAVORITES', label: 'Favoris' },
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setFilterOwned(tab.id)}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                  filterOwned === tab.id
-                    ? 'bg-sky-600 text-white'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Filtre Rareté */}
-          <select
-            value={selectedRarity}
-            onChange={(e) => setSelectedRarity(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-300 focus:outline-none focus:border-sky-500"
-          >
-            <option value="ALL">Toutes les raretés</option>
-            <option value="Common">Commune</option>
-            <option value="Uncommon">Peu Commune</option>
-            <option value="Rare Holo">Rare Holo</option>
-            <option value="Double Rare">Double Rare (ex)</option>
-            <option value="Illustration Rare">Illustration Rare</option>
-            <option value="Special Illustration Rare">Spécial Illustration Rare</option>
-            <option value="Hyper Rare">Hyper Rare (Gold)</option>
-          </select>
-
-          {/* Filtre Type */}
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-300 focus:outline-none focus:border-sky-500"
-          >
-            <option value="ALL">Tous les types</option>
-            <option value="Grass">Plante</option>
-            <option value="Fire">Feu</option>
-            <option value="Water">Eau</option>
-            <option value="Lightning">Électrique</option>
-            <option value="Psychic">Psy</option>
-            <option value="Fighting">Combat</option>
-            <option value="Dragon">Dragon</option>
-            <option value="Colorless">Incolore</option>
-          </select>
-        </div>
-      </div>
-
-      {/* ================= GRILLE DE COLLECTION ================= */}
-      {filteredCards.length === 0 ? (
-        <div className="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-12 text-center">
-          <CircleDashed className="w-12 h-12 text-slate-600 mx-auto mb-3 animate-spin" />
-          <h3 className="text-lg font-bold text-white mb-1">Aucune carte trouvée</h3>
-          <p className="text-xs text-slate-400">
-            Essayez de modifier vos filtres ou d’ouvrir de nouveaux boosters pour agrandir votre collection !
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 justify-items-center">
-          {filteredCards.map((card) => {
-            const item = collection[card.id];
-            const isOwned = item && item.count > 0;
-
-            return (
-              <div key={card.id} className="flex flex-col items-center">
-                {isOwned ? (
-                  <Card3D
-                    card={card}
-                    isFlipped={true}
-                    size="md"
-                    countOwned={item.count}
-                    isFavorite={item.isFavorite}
-                    onToggleFavorite={() => toggleFavorite(card.id)}
-                    onInspect={() => setInspectingCard(card)}
-                  />
-                ) : (
-                  /* Carte manquante : Silhouette de collection */
-                  <div
-                    onClick={() => setInspectingCard(card)}
-                    className="w-48 h-67 rounded-2xl bg-slate-900/60 border-2 border-dashed border-slate-800 hover:border-slate-700 p-4 flex flex-col items-center justify-between text-center cursor-pointer transition-all duration-200 group hover:bg-slate-900"
-                  >
-                    <span className="text-[10px] font-mono text-slate-500">#{card.number}</span>
-                    <div className="opacity-20 group-hover:opacity-40 transition-opacity">
-                      <CircleDashed className="w-12 h-12 text-slate-400" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-semibold text-slate-400 group-hover:text-slate-200 block truncate max-w-[140px]">
-                        {card.name}
-                      </span>
-                      <span className="text-[10px] text-slate-600 font-bold block mt-0.5">
-                        {card.rarity}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                <span className="text-xs font-semibold text-slate-300 mt-2 text-center truncate max-w-[170px]">
-                  {card.name}
-                </span>
+                {EXPANSION_SETS.map((set) => {
+                  const count = CARDS_DATABASE.filter((c) => c.setId === set.id).length;
+                  return (
+                    <button
+                      key={set.id}
+                      type="button"
+                      onClick={() => setSelectedSet(set.id)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                        selectedSet === set.id
+                          ? 'text-white shadow-lg'
+                          : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                      }`}
+                      style={{
+                        backgroundColor: selectedSet === set.id ? set.accentColor : undefined,
+                        boxShadow: selectedSet === set.id ? `0 4px 14px ${set.accentColor}40` : undefined,
+                      }}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: set.accentColor }}
+                      />
+                      <span>{set.name}</span>
+                      <span className="opacity-75 text-[10px]">({count})</span>
+                    </button>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+
+              {/* Recherche */}
+              <div className="relative min-w-[260px]">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Rechercher par nom ou numéro..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Filtres secondaires */}
+            <div className="flex flex-wrap items-center gap-3 pt-6 text-xs">
+              {/* État de possession */}
+              <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+                {(
+                  [
+                    { id: 'ALL', label: 'Toutes' },
+                    { id: 'OWNED', label: 'Possédées' },
+                    { id: 'MISSING', label: 'Manquantes' },
+                    { id: 'FAVORITES', label: 'Favoris' },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setFilterOwned(tab.id)}
+                    className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                      filterOwned === tab.id
+                        ? 'bg-sky-600 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Filtre Rareté */}
+              <select
+                value={selectedRarity}
+                onChange={(e) => setSelectedRarity(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-300 focus:outline-none focus:border-sky-500"
+              >
+                <option value="ALL">Toutes les raretés</option>
+                <option value="Common">Commune</option>
+                <option value="Uncommon">Peu Commune</option>
+                <option value="Rare Holo">Rare Holo</option>
+                <option value="Double Rare">Double Rare (ex)</option>
+                <option value="Illustration Rare">Illustration Rare</option>
+                <option value="Special Illustration Rare">Spécial Illustration Rare</option>
+                <option value="Hyper Rare">Hyper Rare (Gold)</option>
+              </select>
+
+              {/* Filtre Type */}
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-300 focus:outline-none focus:border-sky-500"
+              >
+                <option value="ALL">Tous les types</option>
+                <option value="Grass">Plante</option>
+                <option value="Fire">Feu</option>
+                <option value="Water">Eau</option>
+                <option value="Lightning">Électrique</option>
+                <option value="Psychic">Psy</option>
+                <option value="Fighting">Combat</option>
+                <option value="Dragon">Dragon</option>
+                <option value="Colorless">Incolore</option>
+              </select>
+            </div>
+          </div>
+
+          {/* ================= GRILLE DE COLLECTION ================= */}
+          {filteredCards.length === 0 ? (
+            <div className="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-12 text-center">
+              <CircleDashed className="w-12 h-12 text-slate-600 mx-auto mb-3 animate-spin" />
+              <h3 className="text-lg font-bold text-white mb-1">Aucune carte trouvée</h3>
+              <p className="text-xs text-slate-400">
+                Essayez de modifier vos filtres ou d’ouvrir de nouveaux boosters pour agrandir votre collection !
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 justify-items-center">
+              {filteredCards.map((card) => {
+                const item = collection[card.id];
+                const isOwned = item && item.count > 0;
+
+                return (
+                  <div key={card.id} className="flex flex-col items-center">
+                    {isOwned ? (
+                      <Card3D
+                        card={card}
+                        isFlipped={true}
+                        size="md"
+                        countOwned={item.count}
+                        isFavorite={item.isFavorite}
+                        onToggleFavorite={() => toggleFavorite(card.id)}
+                        onInspect={() => setInspectingCard(card)}
+                      />
+                    ) : (
+                      /* Carte manquante : Silhouette de collection */
+                      <div
+                        onClick={() => setInspectingCard(card)}
+                        className="w-48 h-67 rounded-2xl bg-slate-900/60 border-2 border-dashed border-slate-800 hover:border-slate-700 p-4 flex flex-col items-center justify-between text-center cursor-pointer transition-all duration-200 group hover:bg-slate-900"
+                      >
+                        <span className="text-[10px] font-mono text-slate-500">#{card.number}</span>
+                        <div className="opacity-20 group-hover:opacity-40 transition-opacity">
+                          <CircleDashed className="w-12 h-12 text-slate-400" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold text-slate-400 group-hover:text-slate-200 block truncate max-w-[140px]">
+                            {card.name}
+                          </span>
+                          <span className="text-[10px] text-slate-600 font-bold block mt-0.5">
+                            {card.rarity}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    <span className="text-xs font-semibold text-slate-300 mt-2 text-center truncate max-w-[170px]">
+                      {card.name}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
+
+      {/* Atelier de recyclage */}
+      <RecycleModal
+        isOpen={isRecycleOpen}
+        onClose={() => setIsRecycleOpen(false)}
+      />
 
       {/* Modale d'inspection */}
       <CardInspectorModal
@@ -329,3 +409,4 @@ export const Library: React.FC = () => {
     </div>
   );
 };
+

@@ -82,3 +82,21 @@ export interface PackOpeningHistory {
   bestRarity: CardRarity;
   isGodPack?: boolean;
 }
+
+export interface CraftingRate {
+  recycleYield: number; // Stardust gagné en recyclant un doublon
+  craftCost: number;    // Stardust requis pour forger la carte
+}
+
+export const CRAFTING_RATES: Record<CardRarity, CraftingRate> = {
+  'Common': { recycleYield: 10, craftCost: 50 },
+  'Uncommon': { recycleYield: 25, craftCost: 100 },
+  'Rare': { recycleYield: 50, craftCost: 200 },
+  'Rare Holo': { recycleYield: 100, craftCost: 400 },
+  'Double Rare': { recycleYield: 250, craftCost: 800 },
+  'Ultra Rare': { recycleYield: 500, craftCost: 1500 },
+  'Illustration Rare': { recycleYield: 600, craftCost: 1800 },
+  'Special Illustration Rare': { recycleYield: 1200, craftCost: 3500 },
+  'Hyper Rare': { recycleYield: 1500, craftCost: 4500 },
+};
+

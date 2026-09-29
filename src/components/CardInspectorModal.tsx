@@ -1,5 +1,6 @@
 import React from 'react';
-import { PokemonCard, CardInCollection } from '../types/pokemon';
+import { PokemonCard, CardInCollection, CRAFTING_RATES } from '../types/pokemon';
+import { useCollectionStore } from '../store/useCollectionStore';
 import { Card3D } from './Card3D';
 import { X, Star, Sparkles, Shield, Swords } from 'lucide-react';
 
@@ -142,19 +143,21 @@ export const CardInspectorModal: React.FC<CardInspectorModalProps> = ({
               </div>
             </div>
 
-            {onToggleFavorite && collectionInfo && (
+            {onToggleFavorite && collectionInfo && collectionInfo.count > 0 ? (
               <button
                 type="button"
                 onClick={() => onToggleFavorite(card.id)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
                   collectionInfo.isFavorite
-                    ? 'bg-amber-500 text-slate-950'
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
                 <Star className={`w-4 h-4 ${collectionInfo.isFavorite ? 'fill-current' : ''}`} />
                 {collectionInfo.isFavorite ? 'Favori' : 'Ajouter aux favoris'}
               </button>
+            ) : (
+              <CraftInspectorAction card={card} />
             )}
           </div>
         </div>
@@ -162,3 +165,32 @@ export const CardInspectorModal: React.FC<CardInspectorModalProps> = ({
     </div>
   );
 };
+
+const CraftInspectorAction: React.FC<{ card: PokemonCard }> = ({ card }) => {
+  const stardust = useCollectionStore((state) => state.stardust);
+  const craftCard = useCollectionStore((state) => state.craftCard);
+  const cost = CRAFTING_RATES[card.rarity]?.craftCost ?? 100;
+  const canAfford = stardust >= cost;
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (canAfford) {
+          craftCard(card.id);
+        }
+      }}
+      disabled={!canAfford}
+      className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+        canAfford
+          ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 active:scale-95'
+          : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+      }`}
+      title={canAfford ? `Forger cette carte pour ${cost} Poussières` : `Poussière insuffisante (${stardust}/${cost})`}
+    >
+      <Sparkles className="w-4 h-4 text-cyan-300" />
+      <span>Forger cette carte ({cost} ✨)</span>
+    </button>
+  );
+};
+
