@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CardInCollection, PackOpeningHistory, PokemonCard } from '../types/pokemon';
 import { soundManager } from '../utils/audio';
+import { saveToIndexedDB } from '../services/storage';
 
 interface CollectionState {
   collection: Record<string, CardInCollection>;
@@ -10,6 +11,8 @@ interface CollectionState {
   pokeCoins: number;
   availablePacks: Record<string, number>;
   soundEnabled: boolean;
+  cardTrickEnabled: boolean;
+  fastOpenEnabled: boolean;
 
   // Actions
   addCardsToCollection: (cards: PokemonCard[], setId: string, setName: string, isGodPack?: boolean) => void;
@@ -18,7 +21,10 @@ interface CollectionState {
   consumeBoosterPack: (setId: string) => boolean;
   addBoosterPacks: (setId: string, count: number) => void;
   toggleSound: () => void;
+  toggleCardTrick: () => void;
+  toggleFastOpen: () => void;
   resetCollection: () => void;
+  loadStateFromBackup: (newState: Record<string, unknown>) => void;
 }
 
 export const useCollectionStore = create<CollectionState>()(
@@ -27,12 +33,14 @@ export const useCollectionStore = create<CollectionState>()(
       collection: {},
       openingHistory: [],
       totalPacksOpened: 0,
-      pokeCoins: 500, // Pièces de départ
+      pokeCoins: 500,
       availablePacks: {
-        'sv3pt5': 5, // 5 boosters 151 offerts au démarrage !
+        'sv3pt5': 5, // 5 boosters 151 au démarrage
         'sv03': 3,
       },
       soundEnabled: true,
+      cardTrickEnabled: true, // Rituel de suspense activé par défaut
+      fastOpenEnabled: false,
 
       toggleSound: () => {
         const next = !get().soundEnabled;
@@ -40,11 +48,18 @@ export const useCollectionStore = create<CollectionState>()(
         set({ soundEnabled: next });
       },
 
+      toggleCardTrick: () => {
+        set((state) => ({ cardTrickEnabled: !state.cardTrickEnabled }));
+      },
+
+      toggleFastOpen: () => {
+        set((state) => ({ fastOpenEnabled: !state.fastOpenEnabled }));
+      },
+
       addCardsToCollection: (cards, setId, setName, isGodPack = false) => {
         const now = Date.now();
         const currentCollection = { ...get().collection };
 
-        // Déterminer la meilleure rareté du tirage
         const rarityWeights: Record<string, number> = {
           'Common': 1,
           'Uncommon': 2,
@@ -91,27 +106,32 @@ export const useCollectionStore = create<CollectionState>()(
           isGodPack,
         };
 
-        set((state) => ({
+        const nextState = {
           collection: currentCollection,
-          openingHistory: [newHistoryItem, ...state.openingHistory.slice(0, 49)], // garder les 50 derniers
-          totalPacksOpened: state.totalPacksOpened + 1,
-          pokeCoins: state.pokeCoins + 50, // 50 pièces gagnées par ouverture
-        }));
+          openingHistory: [newHistoryItem, ...get().openingHistory.slice(0, 49)],
+          totalPacksOpened: get().totalPacksOpened + 1,
+          pokeCoins: get().pokeCoins + 50,
+        };
+
+        set(nextState);
+
+        // Sauvegarde asynchrone dans IndexedDB
+        saveToIndexedDB('poketcg_collection', nextState);
       },
 
       toggleFavorite: (cardId: string) => {
         set((state) => {
           const item = state.collection[cardId];
           if (!item) return state;
-          return {
-            collection: {
-              ...state.collection,
-              [cardId]: {
-                ...item,
-                isFavorite: !item.isFavorite,
-              },
+          const updatedCollection = {
+            ...state.collection,
+            [cardId]: {
+              ...item,
+              isFavorite: !item.isFavorite,
             },
           };
+          saveToIndexedDB('poketcg_collection', { collection: updatedCollection });
+          return { collection: updatedCollection };
         });
       },
 
@@ -144,6 +164,17 @@ export const useCollectionStore = create<CollectionState>()(
             ...state.availablePacks,
             [setId]: (state.availablePacks[setId] || 0) + count,
           },
+        }));
+      },
+
+      loadStateFromBackup: (newState) => {
+        set((state) => ({
+          ...state,
+          collection: (newState.collection as Record<string, CardInCollection>) || state.collection,
+          openingHistory: (newState.openingHistory as PackOpeningHistory[]) || state.openingHistory,
+          totalPacksOpened: typeof newState.totalPacksOpened === 'number' ? newState.totalPacksOpened : state.totalPacksOpened,
+          pokeCoins: typeof newState.pokeCoins === 'number' ? newState.pokeCoins : state.pokeCoins,
+          availablePacks: (newState.availablePacks as Record<string, number>) || state.availablePacks,
         }));
       },
 

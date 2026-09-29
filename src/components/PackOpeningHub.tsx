@@ -4,7 +4,7 @@ import { useCollectionStore } from '../store/useCollectionStore';
 import { BoosterPack } from './BoosterPack';
 import { PackOpeningModal } from './PackOpeningModal';
 import { PokemonCard, ExpansionSet } from '../types/pokemon';
-import { Sparkles, ShoppingBag, History, Flame, Trophy } from 'lucide-react';
+import { Sparkles, ShoppingBag, History, Flame, Trophy, Sliders } from 'lucide-react';
 
 export const PackOpeningHub: React.FC = () => {
   const availablePacks = useCollectionStore((state) => state.availablePacks);
@@ -13,6 +13,8 @@ export const PackOpeningHub: React.FC = () => {
   const pokeCoins = useCollectionStore((state) => state.pokeCoins);
   const addCardsToCollection = useCollectionStore((state) => state.addCardsToCollection);
   const openingHistory = useCollectionStore((state) => state.openingHistory);
+  const cardTrickEnabled = useCollectionStore((state) => state.cardTrickEnabled);
+  const toggleCardTrick = useCollectionStore((state) => state.toggleCardTrick);
 
   // État de la session d'ouverture en cours
   const [isOpeningModalOpen, setIsOpeningModalOpen] = useState(false);
@@ -20,9 +22,15 @@ export const PackOpeningHub: React.FC = () => {
   const [currentSet, setCurrentSet] = useState<ExpansionSet>(EXPANSION_SETS[0]);
   const [isGodPackSession, setIsGodPackSession] = useState(false);
 
-  const handleOpenPack = (setInfo: ExpansionSet) => {
+  const handleOpenPack = (setInfo: ExpansionSet, isFastOpen = false) => {
     const success = consumeBoosterPack(setInfo.id);
     if (!success) return;
+
+    if (isFastOpen) {
+      useCollectionStore.setState({ fastOpenEnabled: true });
+    } else {
+      useCollectionStore.setState({ fastOpenEnabled: false });
+    }
 
     const { cards, isGodPack } = generateBoosterPack(setInfo.id);
     setCurrentPackCards(cards);
@@ -30,7 +38,6 @@ export const PackOpeningHub: React.FC = () => {
     setIsGodPackSession(isGodPack);
     setIsOpeningModalOpen(true);
 
-    // Enregistrer les cartes dans la collection du joueur
     addCardsToCollection(cards, setInfo.id, setInfo.name, isGodPack);
   };
 
@@ -46,7 +53,7 @@ export const PackOpeningHub: React.FC = () => {
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-8">
       {/* ================= EN-TÊTE / HERO ================= */}
-      <div className="text-center max-w-2xl mx-auto mb-12">
+      <div className="text-center max-w-2xl mx-auto mb-10">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-bold mb-4">
           <Sparkles className="w-3.5 h-3.5" /> Simulation d’ouverture physique fidèle
         </div>
@@ -56,6 +63,21 @@ export const PackOpeningHub: React.FC = () => {
         <p className="text-sm md:text-base text-slate-400 mt-3 leading-relaxed">
           Choisissez votre extension, déchirez l’emballage métallisé et découvrez vos cartes avec leurs véritables reflets holographiques.
         </p>
+
+        {/* Options rapides (Card trick switch) */}
+        <div className="mt-4 flex items-center justify-center gap-4 text-xs text-slate-400">
+          <button
+            type="button"
+            onClick={toggleCardTrick}
+            className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors"
+          >
+            <Sliders className="w-3.5 h-3.5 text-sky-400" />
+            <span>Rituel Card Trick :</span>
+            <span className={cardTrickEnabled ? 'text-emerald-400 font-bold' : 'text-slate-500'}>
+              {cardTrickEnabled ? 'Activé (Rare en dernier)' : 'Désactivé'}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* ================= RAYON DES BOOSTERS ================= */}
@@ -68,17 +90,17 @@ export const PackOpeningHub: React.FC = () => {
               key={set.id}
               className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col items-center w-full max-w-sm shadow-xl relative overflow-hidden backdrop-blur-sm"
             >
-              {/* Effet d'ambiance lumineuse en arrière-plan */}
               <div
                 className="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-20 pointer-events-none"
                 style={{ backgroundColor: set.accentColor }}
               />
 
-              {/* Booster 3D interactif */}
+              {/* Booster avec options Déchirure ou Rapide */}
               <BoosterPack
                 setInfo={set}
                 availableCount={packCount}
-                onOpen={() => handleOpenPack(set)}
+                onOpen={() => handleOpenPack(set, false)}
+                onFastOpen={() => handleOpenPack(set, true)}
               />
 
               {/* Achat de packs supplémentaires avec pièces */}
@@ -135,7 +157,11 @@ export const PackOpeningHub: React.FC = () => {
                       )}
                     </h4>
                     <span className="text-xs text-slate-500">
-                      {new Date(pack.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} — 10 cartes obtenues
+                      {new Date(pack.openedAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}{' '}
+                      — 10 cartes obtenues
                     </span>
                   </div>
                 </div>
@@ -161,7 +187,7 @@ export const PackOpeningHub: React.FC = () => {
         setInfo={currentSet}
         isGodPack={isGodPackSession}
         canOpenAnother={(availablePacks[currentSet.id] || 0) > 0}
-        onOpenAnother={() => handleOpenPack(currentSet)}
+        onOpenAnother={() => handleOpenPack(currentSet, false)}
       />
     </div>
   );

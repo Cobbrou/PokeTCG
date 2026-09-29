@@ -12,6 +12,8 @@ interface Card3DProps {
   showBadges?: boolean;
   countOwned?: number;
   isFavorite?: boolean;
+  isReverseHolo?: boolean;
+  peekAmount?: number; // Décalage pour entrevoir la tranche (0 à 20px)
   onToggleFavorite?: () => void;
   onInspect?: () => void;
 }
@@ -25,6 +27,8 @@ export const Card3D: React.FC<Card3DProps> = ({
   showBadges = true,
   countOwned,
   isFavorite,
+  isReverseHolo = false,
+  peekAmount = 0,
   onToggleFavorite,
   onInspect,
 }) => {
@@ -42,7 +46,7 @@ export const Card3D: React.FC<Card3DProps> = ({
     xl: 'w-80 h-112 text-lg',
   }[size];
 
-  // Détection des mouvements pour le tilt 3D et le reflet holographique
+  // Calcul dynamique des angles de rotation
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!interactive || !cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
@@ -52,7 +56,6 @@ export const Card3D: React.FC<Card3DProps> = ({
     const percentX = (x / rect.width) * 100;
     const percentY = (y / rect.height) * 100;
 
-    // Calcul des angles de rotation (max +/- 18 degrés)
     const rY = ((x / rect.width) - 0.5) * 36;
     const rX = -((y / rect.height) - 0.5) * 36;
 
@@ -63,8 +66,14 @@ export const Card3D: React.FC<Card3DProps> = ({
 
   const handleMouseEnter = () => {
     setIsHovered(true);
-    if (isFlipped && (card.rarity === 'Illustration Rare' || card.rarity === 'Special Illustration Rare' || card.rarity === 'Hyper Rare')) {
-      soundManager.playSparkle();
+    if (isFlipped) {
+      if (
+        card.rarity === 'Illustration Rare' ||
+        card.rarity === 'Special Illustration Rare' ||
+        card.rarity === 'Hyper Rare'
+      ) {
+        soundManager.playSparkle();
+      }
     }
   };
 
@@ -86,35 +95,55 @@ export const Card3D: React.FC<Card3DProps> = ({
     }
   };
 
-  // Styles de reflets selon la rareté
+  // Rendu de l'effet foil selon la rareté
   const getFoilStyle = (rarity: CardRarity) => {
     if (!isFlipped || !isHovered) return {};
 
     switch (rarity) {
       case 'Hyper Rare':
-        return {
-          background: `radial-gradient(circle at ${glintPos.x}% ${glintPos.y}%, rgba(255, 235, 120, 0.8) 0%, rgba(255, 180, 0, 0.5) 45%, rgba(180, 110, 0, 0.2) 80%, transparent 100%)`,
-          mixBlendMode: 'color-dodge' as const,
-        };
-      case 'Special Illustration Rare':
-      case 'Illustration Rare':
+        // Or Métallique brossé avec reflet spéculaire intense
         return {
           background: `
-            radial-gradient(circle at ${glintPos.x}% ${glintPos.y}%, rgba(255, 255, 255, 0.9) 0%, transparent 40%),
-            linear-gradient(${glintPos.x * 3.6}deg, rgba(255,0,128,0.4) 0%, rgba(0,255,200,0.4) 25%, rgba(255,230,0,0.4) 50%, rgba(140,0,255,0.4) 75%, rgba(255,0,128,0.4) 100%)
+            radial-gradient(circle at ${glintPos.x}% ${glintPos.y}%, rgba(255, 245, 160, 0.95) 0%, rgba(255, 200, 0, 0.6) 30%, rgba(180, 110, 0, 0.3) 70%, transparent 100%),
+            linear-gradient(${glintPos.x * 2.8}deg, rgba(255,215,0,0.5) 0%, rgba(255,255,255,0.7) 50%, rgba(255,180,0,0.5) 100%)
           `,
           mixBlendMode: 'color-dodge' as const,
         };
-      case 'Double Rare':
-      case 'Rare Holo':
+
+      case 'Special Illustration Rare':
+      case 'Illustration Rare':
+        // Shimmer Cosmique avec aberration chromatique
         return {
-          background: `linear-gradient(${glintPos.x * 2.5}deg, transparent 20%, rgba(255, 255, 255, 0.5) 48%, rgba(130, 220, 255, 0.7) 50%, rgba(255, 180, 255, 0.6) 52%, transparent 75%)`,
+          background: `
+            radial-gradient(circle at ${glintPos.x}% ${glintPos.y}%, rgba(255, 255, 255, 0.95) 0%, transparent 45%),
+            linear-gradient(${glintPos.x * 3.6}deg, rgba(255,0,128,0.45) 0%, rgba(0,240,255,0.45) 25%, rgba(255,230,0,0.45) 50%, rgba(140,0,255,0.45) 75%, rgba(255,0,128,0.45) 100%)
+          `,
           mixBlendMode: 'color-dodge' as const,
         };
-      default:
-        // Reflet glacé standard
+
+      case 'Double Rare':
+      case 'Rare Holo':
+        // Lignes diagonales de réfraction holographique
         return {
-          background: `radial-gradient(circle at ${glintPos.x}% ${glintPos.y}%, rgba(255, 255, 255, 0.25) 0%, transparent 60%)`,
+          background: `
+            radial-gradient(circle at ${glintPos.x}% ${glintPos.y}%, rgba(255, 255, 255, 0.8) 0%, transparent 50%),
+            linear-gradient(${glintPos.x * 2.5 + 45}deg, transparent 25%, rgba(255, 255, 255, 0.5) 48%, rgba(130, 220, 255, 0.7) 50%, rgba(255, 180, 255, 0.6) 52%, transparent 75%)
+          `,
+          mixBlendMode: 'color-dodge' as const,
+        };
+
+      default:
+        if (isReverseHolo) {
+          return {
+            background: `
+              radial-gradient(circle at ${glintPos.x}% ${glintPos.y}%, rgba(255, 255, 255, 0.7) 0%, transparent 50%),
+              repeating-linear-gradient(${glintPos.x * 1.5 + 45}deg, rgba(255,255,255,0.2) 0px, rgba(255,255,255,0.2) 15px, rgba(0,200,255,0.25) 15px, rgba(0,200,255,0.25) 30px)
+            `,
+            mixBlendMode: 'color-dodge' as const,
+          };
+        }
+        return {
+          background: `radial-gradient(circle at ${glintPos.x}% ${glintPos.y}%, rgba(255, 255, 255, 0.3) 0%, transparent 60%)`,
           mixBlendMode: 'screen' as const,
         };
     }
@@ -140,6 +169,23 @@ export const Card3D: React.FC<Card3DProps> = ({
     }
   };
 
+  // Couleur de tranche pour l'Edge Peek
+  const getEdgePeekColor = (rarity: CardRarity) => {
+    switch (rarity) {
+      case 'Hyper Rare':
+        return 'border-r-4 border-r-amber-400 shadow-[2px_0_12px_#f59e0b]';
+      case 'Special Illustration Rare':
+        return 'border-r-4 border-r-pink-500 shadow-[2px_0_12px_#ec4899]';
+      case 'Illustration Rare':
+        return 'border-r-4 border-r-cyan-400 shadow-[2px_0_12px_#06b6d4]';
+      case 'Double Rare':
+      case 'Rare Holo':
+        return 'border-r-4 border-r-indigo-400 shadow-[2px_0_12px_#6366f1]';
+      default:
+        return 'border-r-2 border-r-slate-400';
+    }
+  };
+
   return (
     <div
       ref={cardRef}
@@ -148,21 +194,26 @@ export const Card3D: React.FC<Card3DProps> = ({
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}
       className={`relative select-none ${sizeClasses} perspective-1000 cursor-pointer group`}
+      style={{
+        transform: peekAmount > 0 ? `translateX(${peekAmount}px)` : undefined,
+      }}
     >
-      {/* Conteneur 3D avec rotation */}
+      {/* Conteneur 3D avec biseau physique et épaisseur de tranche */}
       <div
-        className="w-full h-full duration-150 ease-out preserve-3d rounded-2xl shadow-xl transition-transform"
+        className={`w-full h-full duration-150 ease-out preserve-3d rounded-2xl card-3d-edge transition-transform ${
+          !isFlipped && peekAmount > 0 ? getEdgePeekColor(card.rarity) : ''
+        }`}
         style={{
           transform: `
             rotateX(${rotateX}deg) 
             rotateY(${isFlipped ? rotateY : rotateY + 180}deg) 
-            scale(${isHovered ? 1.04 : 1})
+            scale(${isHovered ? 1.05 : 1})
           `,
           transformStyle: 'preserve-3d',
           transition: isHovered ? 'transform 0.08s ease-out' : 'transform 0.4s ease-out',
         }}
       >
-        {/* ================= RECTO (Face de la carte) ================= */}
+        {/* ================= RECTO ================= */}
         <div className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden backface-hidden shadow-2xl bg-slate-900 border border-slate-700/60 flex flex-col">
           <img
             src={card.images.large || card.images.small}
@@ -171,22 +222,25 @@ export const Card3D: React.FC<Card3DProps> = ({
             className="w-full h-full object-cover rounded-2xl pointer-events-none select-none"
           />
 
-          {/* Calque de reflet Foil / Holographique interactif */}
+          {/* Calque de reflet Foil Holographique */}
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-200"
             style={{
               ...getFoilStyle(card.rarity),
-              opacity: isHovered ? 0.9 : 0,
+              opacity: isHovered ? 0.92 : 0,
             }}
           />
 
-          {/* Effet d'étincelles pour les Ultra Rares */}
-          {(card.rarity === 'Special Illustration Rare' || card.rarity === 'Hyper Rare') && (
+          {/* Décoration Reverse Holo : Motif en cannelures avec découpe mate de l'illustration */}
+          {isReverseHolo && isFlipped && isHovered && (
+            <div className="absolute inset-0 rounded-2xl pointer-events-none reverse-holo-bars opacity-70" />
+          )}
+
+          {/* Éclat d'étoiles scintillantes sur Ultra Rares */}
+          {(card.rarity === 'Special Illustration Rare' || card.rarity === 'Hyper Rare') && isHovered && (
             <div
-              className="absolute inset-0 rounded-2xl pointer-events-none opacity-40 mix-blend-color-dodge bg-gradient-to-tr from-transparent via-white/20 to-transparent"
-              style={{
-                backgroundPosition: `${glintPos.x}% ${glintPos.y}%`,
-              }}
+              className="absolute inset-0 rounded-2xl pointer-events-none opacity-50 mix-blend-color-dodge bg-gradient-to-tr from-transparent via-white/30 to-transparent"
+              style={{ backgroundPosition: `${glintPos.x}% ${glintPos.y}%` }}
             />
           )}
 
@@ -237,7 +291,7 @@ export const Card3D: React.FC<Card3DProps> = ({
                 {(card.rarity === 'Special Illustration Rare' || card.rarity === 'Hyper Rare') && (
                   <Sparkles className="w-2.5 h-2.5 inline animate-pulse" />
                 )}
-                {card.rarity}
+                {isReverseHolo ? 'Reverse Holo' : card.rarity}
               </span>
 
               {typeof countOwned === 'number' && (
@@ -252,13 +306,10 @@ export const Card3D: React.FC<Card3DProps> = ({
         {/* ================= VERSO (Dos officiel Pokémon) ================= */}
         <div
           className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden backface-hidden shadow-2xl bg-gradient-to-br from-blue-900 via-indigo-950 to-blue-950 border-2 border-amber-600/70 p-2 flex flex-col items-center justify-center"
-          style={{
-            transform: 'rotateY(180deg)',
-          }}
+          style={{ transform: 'rotateY(180deg)' }}
         >
-          {/* Design authentique du dos de carte Pokémon */}
           <div className="w-full h-full rounded-xl border border-amber-500/40 relative flex items-center justify-center overflow-hidden bg-gradient-to-b from-blue-800 to-indigo-900">
-            {/* Pokéball stylisée centrale */}
+            {/* Pokéball officielle stylisée */}
             <div className="w-24 h-24 rounded-full border-4 border-slate-900 bg-gradient-to-b from-red-600 50% to-slate-100 50% relative flex items-center justify-center shadow-xl">
               <div className="w-full h-2 bg-slate-900 absolute top-1/2 -translate-y-1/2" />
               <div className="w-8 h-8 rounded-full border-4 border-slate-900 bg-white relative z-10 flex items-center justify-center">
@@ -266,7 +317,6 @@ export const Card3D: React.FC<Card3DProps> = ({
               </div>
             </div>
 
-            {/* Bandeaux courbés haut et bas */}
             <div className="absolute top-3 text-[10px] uppercase font-black tracking-widest text-amber-400 drop-shadow">
               Pokémon
             </div>
@@ -274,7 +324,6 @@ export const Card3D: React.FC<Card3DProps> = ({
               Trading Card Game
             </div>
 
-            {/* Texture de lumière */}
             <div className="absolute inset-0 bg-radial from-transparent via-blue-500/10 to-black/40 pointer-events-none" />
           </div>
         </div>
