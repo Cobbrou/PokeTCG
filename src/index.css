@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-heading: 'Outfit', sans-serif;
+    --font-sans: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+/* 3D Perspective & Preservation */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Holographic Shimmer Effects */
+.holo-sparkle {
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.8) 0%, transparent 60%),
+    linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.4) 40%, rgba(255, 215, 0, 0.5) 50%, rgba(255, 0, 128, 0.4) 60%, transparent 80%);
+  background-size: 200% 200%;
+}
+
+.cosmic-foil {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 0, 150, 0.3) 0%,
+    rgba(0, 204, 255, 0.3) 25%,
+    rgba(255, 220, 0, 0.3) 50%,
+    rgba(0, 255, 136, 0.3) 75%,
+    rgba(180, 0, 255, 0.3) 100%
+  );
+  mix-blend-mode: color-dodge;
+}
+
+.gold-foil {
+  background: linear-gradient(
+    125deg,
+    rgba(255, 215, 0, 0) 15%,
+    rgba(255, 255, 255, 0.8) 40%,
+    rgba(255, 215, 0, 0.8) 50%,
+    rgba(255, 140, 0, 0.5) 60%,
+    rgba(255, 215, 0, 0) 85%
+  );
+  mix-blend-mode: overlay;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
